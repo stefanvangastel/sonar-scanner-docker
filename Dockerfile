@@ -11,18 +11,24 @@ ENV SCANNER_VERSION 2.8
 # Install dep's like unzip and wget
 RUN apk add --no-cache unzip wget
 
-# Create project directory
-RUN mkdir /project
-
-# Make it workdir for 
-WORKDIR /project
-
 # Download, extract and remove zip
-RUN wget -O sonar-scanner.zip https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/:sonar-scanner-$SCANNER_VERSION.zip && \
-    unzip sonar-scanner.zip && \
-    mv sonar-scanner-$SCANNER_VERSION/bin/sonar-scanner /usr/bin/sonar-scanner && \
-    chmod +x /usr/bin/sonar-scanner && \
+RUN wget -O sonar-scanner.zip https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-$SCANNER_VERSION.zip && \
+    unzip sonar-scanner.zip -d / && \
+    chmod +x /sonar-scanner-$SCANNER_VERSION/bin/sonar-scanner && \
     rm sonar-scanner.zip
+
+# Set home
+ENV SONAR_SCANNER_HOME /sonar-scanner-$SCANNER_VERSION
+
+# Apply some heap space improvements
+ENV SONAR_RUNNER_OPTS "-Xmx512m -XX:MaxPermSize=128m"
+
+# Symlink to /usr/bin (For CI)
+RUN ln -s /sonar-scanner-$SCANNER_VERSION/bin/sonar-scanner /usr/bin/sonar-scanner
+
+# Create a workdir for the 'Scanning a mounted volume' option
+RUN mkdir /project
+WORKDIR /project
    
 # Run sonar-scanner
 CMD ["sonar-scanner"]
